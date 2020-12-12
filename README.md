@@ -1,2 +1,2 @@
 # mnist_cnn
-Solving MNIST dataset with CNN 
+Solving the MNIST dataset with CNN 
