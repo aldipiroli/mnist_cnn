@@ -106,19 +106,25 @@ def loss_batch(model, loss_func, xb, yb, opt=None):
 
 
 if __name__ == "__main__":
-    bs = 64
+    bs = 1
     epochs = 5
     lr = 0.1
     train_dl, valid_dl, n, c = LoadData(bs)
 
     loss_func = F.cross_entropy
 
-    model, opt = GetModelCNN(lr)
-    # model, opt = GetModelMLP(lr)
+    # model, opt = GetModelCNN(lr)
+    model, opt = GetModelMLP(lr)
 
     for epoch in range(epochs):
         model.train()
         for xb, yb in train_dl:
+            # plt.imshow(xb.view((28,28)),  cmap="gray")
+            # plt.show()
+            # input()
+
+            print(xb.size())
+
             pred = model(xb)
             loss = loss_func(pred, yb)
 
@@ -133,7 +139,7 @@ if __name__ == "__main__":
         print(epoch, valid_loss / len(valid_dl))
 
     # Save Model:
-    torch.save(model.state_dict(), "/home/aldi/workspace/mnist_cnn/src/model/model_cnn")
+    # torch.save(model.state_dict(), "/home/aldi/workspace/mnist_cnn/src/model/model_mlp")
     # torch.save(model, "/home/aldi/workspace/mnist_cnn/src/model/model")
 
 
