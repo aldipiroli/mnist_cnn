@@ -16,7 +16,7 @@ import torch.nn.functional as F
 from torch import optim
 
 
-def LoadData(bs):
+def LoadData(bs, device):
     DATA_PATH = Path("data")
     PATH = DATA_PATH / "mnist"
 
@@ -91,14 +91,20 @@ class Mnist_CNN(nn.Module):
 
 
 if __name__ == "__main__":
+    use_cuda = False
+    device = torch.device("cuda" if use_cuda else "cpu")
+    
     bs = 64
     epochs = 5
     lr = 0.1
 
-    train_dl, valid_dl, n, c = LoadData(bs)
+    train_dl, valid_dl, n, c = LoadData(bs, device)
+    
     loss_func = F.cross_entropy
 
-    model = Mnist_CNN()
+    
+
+    model = Mnist_CNN().to(device)
     opt = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
 
 
@@ -112,6 +118,9 @@ if __name__ == "__main__":
             # plt.show()
             # input()
             # print(xb.size())
+            xb.to(device)
+            yb.to(device)
+
 
             pred = model(xb)
             loss = loss_func(pred, yb)
