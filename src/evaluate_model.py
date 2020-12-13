@@ -15,6 +15,8 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 from torch import optim
 
+import cv2
+
 
 def LoadData(bs):
     DATA_PATH = Path("data")
@@ -44,7 +46,7 @@ def LoadData(bs):
     train_dl = DataLoader(train_ds, batch_size=bs)
 
     valid_ds = TensorDataset(x_valid, y_valid)
-    valid_dl = DataLoader(valid_ds, batch_size=bs * 2)
+    valid_dl = DataLoader(valid_ds, batch_size=bs)
 
     return train_dl, valid_dl, n, c
 
@@ -65,48 +67,44 @@ class Mnist_CNN(nn.Module):
         return xb.view(-1, xb.size(1))
 
 
+def LoadImage(file):
+    img = cv2.imread(file, 0)
+    img = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
+    # img = np.floor( img / 255)
+    img = img / 255 
+    img = torch.from_numpy(img)
+    img = img.view(1, 784)
+    img = img.float()
+    print(max(img))
+    # print(img.size())
+
+    # plt.imshow(img)
+    # plt.show()
+    return img
+
 
 if __name__ == "__main__":
-    bs = 64
-    epochs = 5
-    lr = 0.1
-
-    train_dl, valid_dl, n, c = LoadData(bs)
-    loss_func = F.cross_entropy
-
     model = Mnist_CNN()
-    opt = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
+    model.load_state_dict(torch.load(
+        "/home/aldi/workspace/mnist_cnn/src/model/model_cnn.pt"))
+    model.eval()
 
+    file1 = "/home/aldi/workspace/mnist_cnn/src/data/mnist/sample_mnist/tensor([3]).png"
+    file2 = "/home/aldi/workspace/mnist_cnn/src/data/mnist/sample_nums/num_8.png"
+    img = LoadImage(file2)
 
-    for epoch in range(epochs):
-        model.train()
-        for count, (xb, yb) in enumerate(train_dl):
-            if count % 100 == 0:
-                print("Epoch: ", epoch, " #: ", count)
+    pred = model(img)
+    indx = torch.argmax(pred, dim=1)
+    plt.imshow(img.view(28,28))
+    print("Prediction: ",indx)
+    plt.show()
 
-            # plt.imshow(xb.view((28,28)),  cmap="gray")
-            # plt.show()
-            # input()
-            # print(xb.size())
+    # train_dl, valid_dl, n, c = LoadData(1)
 
-            pred = model(xb)
-            loss = loss_func(pred, yb)
-
-            loss.backward()
-            opt.step()
-            opt.zero_grad()
-
-        model.eval()
-        with torch.no_grad():
-            valid_loss = sum(loss_func(model(xb), yb) for xb, yb in valid_dl)
-
-        print(epoch, valid_loss / len(valid_dl))
-
-    # Save Model:
-    torch.save(model.state_dict(), "/home/aldi/workspace/mnist_cnn/src/model/model_cnn.pt")
-    # torch.save(model, "/home/aldi/workspace/mnist_cnn/src/model/model")
-
-
-    # Model class must be defined somewhere
-    # model = torch.load(PATH)
-    # model.eval()
+    # for xb, yb in valid_dl:
+    #     # plt.imshow(xb.view(28, 28))
+    #     indx = torch.argmax(model(xb), dim=1)
+    #     print("Pred: ", indx, ", Truth:", yb)
+    #     # cv2.imwrite("/home/aldi/workspace/mnist_cnn/src/data/mnist/sample_mnist/"+str(yb.flatten())+".png", xb.view(28, 28).numpy()) 
+    #     plt.show()
+    #     input()

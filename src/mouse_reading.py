@@ -22,8 +22,8 @@ def line_drawing(event,x,y,flags,param):
         cv2.line(img,(pt1_x,pt1_y),(x,y),color=(255,255,255),thickness=3)        
 
 
-img = np.zeros((512,512,3), np.uint8)
-cv2.namedWindow('test draw')
+img = np.zeros((28,28,1), np.float)
+cv2.namedWindow('test draw', cv2.WINDOW_NORMAL)
 cv2.setMouseCallback('test draw',line_drawing)
 
 while(1):
@@ -33,5 +33,5 @@ while(1):
 cv2.destroyAllWindows()
 
 print("End of life")
-plt.imshow(img)
-plt.show()
+# plt.imshow(img)
+# plt.show()
