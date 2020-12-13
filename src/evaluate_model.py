@@ -17,6 +17,8 @@ from torch import optim
 
 import cv2
 
+from train_model import *
+
 
 def LoadData(bs):
     DATA_PATH = Path("data")
@@ -51,36 +53,69 @@ def LoadData(bs):
     return train_dl, valid_dl, n, c
 
 
-class Mnist_CNN(nn.Module):
-    def __init__(self):
-        super().__init__()
-        self.conv1 = nn.Conv2d(1, 16, kernel_size=3, stride=2, padding=1)
-        self.conv2 = nn.Conv2d(16, 16, kernel_size=3, stride=2, padding=1)
-        self.conv3 = nn.Conv2d(16, 10, kernel_size=3, stride=2, padding=1)
-
-    def forward(self, xb):
-        xb = xb.view(-1, 1, 28, 28)
-        xb = F.relu(self.conv1(xb))
-        xb = F.relu(self.conv2(xb))
-        xb = F.relu(self.conv3(xb))
-        xb = F.avg_pool2d(xb, 4)
-        return xb.view(-1, xb.size(1))
-
-
 def LoadImage(file):
     img = cv2.imread(file, 0)
     img = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
-    # img = np.floor( img / 255)
-    img = img / 255 
+    img = np.floor(img / 255)
     img = torch.from_numpy(img)
     img = img.view(1, 784)
     img = img.float()
-    print(max(img))
-    # print(img.size())
-
-    # plt.imshow(img)
-    # plt.show()
     return img
+
+
+class ImageHandler:
+    def __init__(self):
+        # super().__init__()
+        self.drawing = False
+        self.pt1_x = None
+        self.pt1_y = None
+
+        self.img = np.zeros((28, 28, 1), np.float)
+        cv2.namedWindow('test draw', cv2.WINDOW_NORMAL)
+        cv2.setMouseCallback('test draw', self.line_drawing)
+
+        while(1):
+            cv2.imshow('test draw', self.img)
+            if cv2.waitKey(1) & 0xFF == 27:
+                break
+            # self.EvaluateImage()
+
+        cv2.destroyAllWindows()
+        
+    def line_drawing(self,event, x, y, flags, param):
+
+        if event == cv2.EVENT_LBUTTONDOWN:
+            self.drawing = True
+            self.pt1_x, self.pt1_y = x, y
+
+        elif event == cv2.EVENT_MOUSEMOVE:
+            if self.drawing == True:
+                cv2.line(self.img, (self.pt1_x, self.pt1_y),
+                         (x, y), color=(255, 255, 255), thickness=2)
+                self.pt1_x, self.pt1_y = x, y
+
+        elif event == cv2.EVENT_LBUTTONUP:
+            self.drawing = False
+            cv2.line(self.img, (self.pt1_x, self.pt1_y),
+                     (x, y), color=(255, 255, 255), thickness=2)
+
+    
+    def ProcessImage(self):
+        self.img = cv2.resize(self.img, (28, 28), interpolation=cv2.INTER_AREA)
+        self.img = np.floor(self.img / 255)
+        self.img = torch.from_numpy(self.img)
+        self.img = self.img.view(1, 784)
+        self.img = self.img.float()
+        return self.img
+
+
+    def EvaluateImage(self):
+        img = self.ProcessImage()
+        pred = model(img)
+        indx = torch.argmax(pred, dim=1)
+        plt.imshow(img.view(28, 28))
+        print("Prediction: ", indx)
+
 
 
 if __name__ == "__main__":
@@ -89,15 +124,19 @@ if __name__ == "__main__":
         "/home/aldi/workspace/mnist_cnn/src/model/model_cnn.pt"))
     model.eval()
 
-    file1 = "/home/aldi/workspace/mnist_cnn/src/data/mnist/sample_mnist/tensor([3]).png"
-    file2 = "/home/aldi/workspace/mnist_cnn/src/data/mnist/sample_nums/num_8.png"
-    img = LoadImage(file2)
+    # file1 = "/home/aldi/workspace/mnist_cnn/src/data/mnist/sample_mnist/tensor([3]).png"
+    # file2 = "/home/aldi/workspace/mnist_cnn/src/data/mnist/sample_nums/num_8.png"
+    # img = LoadImage(file2)
+    handler = ImageHandler()
+    img = handler.ProcessImage()
+
 
     pred = model(img)
     indx = torch.argmax(pred, dim=1)
-    plt.imshow(img.view(28,28))
-    print("Prediction: ",indx)
+    plt.imshow(img.view(28, 28))
+    print("Prediction: ", indx)
     plt.show()
+
 
     # train_dl, valid_dl, n, c = LoadData(1)
 
@@ -105,6 +144,6 @@ if __name__ == "__main__":
     #     # plt.imshow(xb.view(28, 28))
     #     indx = torch.argmax(model(xb), dim=1)
     #     print("Pred: ", indx, ", Truth:", yb)
-    #     # cv2.imwrite("/home/aldi/workspace/mnist_cnn/src/data/mnist/sample_mnist/"+str(yb.flatten())+".png", xb.view(28, 28).numpy()) 
+    #     # cv2.imwrite("/home/aldi/workspace/mnist_cnn/src/data/mnist/sample_mnist/"+str(yb.flatten())+".png", xb.view(28, 28).numpy())
     #     plt.show()
     #     input()
