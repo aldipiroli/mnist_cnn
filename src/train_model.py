@@ -91,7 +91,7 @@ class Mnist_CNN(nn.Module):
 
 
 if __name__ == "__main__":
-    use_cuda = False
+    use_cuda = True
     device = torch.device("cuda" if use_cuda else "cpu")
     
     bs = 64

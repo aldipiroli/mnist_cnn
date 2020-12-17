@@ -167,7 +167,7 @@ def CenterImage(file):
 if __name__ == "__main__":
     model = Mnist_CNN()
     model.load_state_dict(torch.load(
-        "/home/aldi/workspace/mnist_cnn/src/model/model_cnn.pt"))
+        "model/model_cnn.pt"))
     model.eval()
 
     file1 = "/home/aldi/workspace/mnist_cnn/src/data/mnist/sample_mnist/tensor([3]).png"
