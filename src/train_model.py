@@ -1,145 +1,141 @@
+
 import torch
-from torch import nn
-from matplotlib import pyplot as plt
-import numpy as np
-import math
-import random
-
-from pathlib import Path
-import requests
-import pickle
-import gzip
-from torch.utils.data import TensorDataset
+import torch.nn as nn
 from torch.utils.data import DataLoader
-
-import torch.nn.functional as F
-from torch import optim
-
-
-def LoadData(bs, device):
-    DATA_PATH = Path("data")
-    PATH = DATA_PATH / "mnist"
-
-    PATH.mkdir(parents=True, exist_ok=True)
-
-    URL = "https://github.com/pytorch/tutorials/raw/master/_static/"
-    FILENAME = "mnist.pkl.gz"
-
-    if not (PATH / FILENAME).exists():
-        content = requests.get(URL + FILENAME).content
-        (PATH / FILENAME).open("wb").write(content)
-
-    with gzip.open((PATH / FILENAME).as_posix(), "rb") as f:
-        ((x_train, y_train), (x_valid, y_valid),
-            _) = pickle.load(f, encoding="latin-1")
-
-    # Convert np -> torch tensors
-    x_train, y_train, x_valid, y_valid = map(
-        torch.tensor, (x_train, y_train, x_valid, y_valid)
-    )
-
-    n, c = x_train.shape
-    x_train = x_train.view((x_train.shape[0], 1,  28, 28))
-
-    print("Ecco", y_train.shape)
-    # print("Ecccooolo ", x_train.shape)
-
-    train_ds = TensorDataset(x_train, y_train)
-    train_dl = DataLoader(train_ds, batch_size=bs)
-
-    valid_ds = TensorDataset(x_valid, y_valid)
-    valid_dl = DataLoader(valid_ds, batch_size=bs * 2)
-
-    return train_dl, valid_dl, n, c
+import torchvision.transforms as transforms
+import torchvision.datasets
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 
-class Mnist_CNN(nn.Module):
+# Convolutional neural network (two convolutional layers)
+class ConvNet(nn.Module):
     def __init__(self):
-        super(Mnist_CNN, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
-        self.dropout1 = nn.Dropout(0.25)
-        self.dropout2 = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(9216, 128)
-        self.fc2 = nn.Linear(128, 10)
+        super(ConvNet, self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.drop_out = nn.Dropout()
+        self.fc1 = nn.Linear(7 * 7 * 64, 1000)
+        self.fc2 = nn.Linear(1000, 10)
 
     def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(x)
-        x = self.conv2(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
-        x = self.dropout1(x)
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.dropout2(x)
-        x = self.fc2(x)
-        output = F.log_softmax(x, dim=1)
-        return output
+        out = self.layer1(x)
+        out = self.layer2(out)
+        out = out.reshape(out.size(0), -1)
+        out = self.drop_out(out)
+        out = self.fc1(out)
+        out = self.fc2(out)
+        return out
+
+
+def load_data(DATA_PATH, batch_size):
+    trans = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+
+    # MNIST dataset
+    train_dataset = torchvision.datasets.MNIST(
+        root=DATA_PATH, train=True, transform=trans, download=True)
+    test_dataset = torchvision.datasets.MNIST(
+        root=DATA_PATH, train=False, transform=trans)
+
+    # Data loader
+    train_loader = DataLoader(dataset=train_dataset,
+                              batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(dataset=test_dataset,
+                             batch_size=batch_size, shuffle=False)
+    
+    return train_loader, test_loader
+
+
+def train_model(model, train_loader, device):
+    total_step = len(train_loader)
+    loss_list = []
+    acc_list = []
+    model.train()
+    for epoch in range(num_epochs):
+        for i, (images, labels) in enumerate(train_loader):
+            images, labels = images.to(device), labels.to(device)
+            # Run the forward pass
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            loss_list.append(loss.item())
+
+            # Backprop and perform Adam optimisation
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+
+            # Track the accuracy
+            total = labels.size(0)
+            _, predicted = torch.max(outputs.data, 1)
+            correct = (predicted == labels).sum().item()
+            acc_list.append(correct / total)
+
+            if (i + 1) % 100 == 0:
+                print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Accuracy: {:.2f}%'
+                      .format(epoch + 1, num_epochs, i + 1, total_step, loss.item(),
+                              (correct / total) * 100))
+    return loss_list
+
+
+def test_model(model, test_loader, device, MODEL_STORE_PATH):
+    model.eval()
+    with torch.no_grad():
+        correct = 0
+        total = 0
+        for images, labels in test_loader:
+            images, labels = images.to(device), labels.to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+
+        print('Test Accuracy of the model on the 10000 test images: {} %'.format(
+            (correct / total) * 100))
+
+    # Save the model and plot
+    # torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model.pt')
+
+def print_loss(loss_list):
+    plt.plot(np.arange(len(loss_list)), loss_list)
+    plt.grid()
+    plt.show()
 
 if __name__ == "__main__":
-    use_cuda = False
-    device = torch.device("cuda" if use_cuda else "cpu")
-    
-    bs = 64
-    epochs = 1
-    lr = 0.1
+    # GPU Device
+    device = torch.device(
+        "cuda") if torch.cuda.is_available() else torch.device("cpu")
 
-    train_dl, valid_dl, n, c = LoadData(bs, device)
-    
-    loss_func = F.nll_loss
+    # Hyperparameters
+    num_epochs = 6
+    batch_size = 100
+    learning_rate = 0.001
 
-
-    model = Mnist_CNN().to(device)
-    opt = optim.SGD(model.parameters(), lr=lr, momentum=0.9)
+    DATA_PATH = '/home/aldi/workspace/projects/mnist_cnn/src/data/'
+    MODEL_STORE_PATH = '/home/aldi/workspace/projects/mnist_cnn/src/model/'
 
 
-    for epoch in range(epochs):
-        model.train()
-        for count, (xb, yb) in enumerate(train_dl):
-            print("Da shape: ", xb.shape)
-            if count % 100 == 0:
-                print("Epoch: ", epoch, " #: ", count)
-            
+    train_loader, test_loader = load_data(DATA_PATH, batch_size)
+    model = ConvNet().to(device)
+
+    # Loss and optimizer
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 
-            # x_show = xb[0, :]
-            # print(x_show.shape)
-            # plt.imshow(x_show.view((28,28)),  cmap="gray")
-            # plt.show()
-            # input()
-            # xb.to(device)
-            # yb.to(device)
-            # print(xb.shape)
-            xb = xb.view((bs, 1, 28, 28))
-            # print(xb.shape)
-            # input()
-
-            pred = model(xb)
-            loss = loss_func(pred, yb)
-
-            loss.backward()
-            opt.step()
-            opt.zero_grad()
-
-        model.eval()
-        with torch.no_grad():
-            print("The loss is:")
-            val_loss = 0
-            for xb, yb in valid_dl:
-                xb = xb.view((2*bs, 1, 28, 28))
-                val_loss += loss_func(model(xb), yb)
-            # valid_loss = sum(loss_func(model(xb), yb) for xb, yb in valid_dl)
-
-        print(epoch, valid_loss / len(valid_dl))
-
-    # Save Model:
-    torch.save(model.state_dict(), "/home/aldi/workspace/mnist_cnn/src/model/model_cnn.pt")
-    # torch.save(model, "/home/aldi/workspace/mnist_cnn/src/model/model")
+    loss_list = train_model(model, train_loader, device)
 
 
-    # Model class must be defined somewhere
-    # model = torch.load(PATH)
-    # model.eval()
+    model = ConvNet().to(device)
+    model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model.pt"))
+    model.eval()
+    test_model(model, test_loader, device, MODEL_STORE_PATH)
+
+    # print_loss(loss_list)
