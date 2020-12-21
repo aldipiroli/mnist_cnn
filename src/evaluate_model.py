@@ -3,17 +3,17 @@ import torch
 from torch import nn
 import cv2
 from torch.autograd import Variable
+import torchvision.transforms as transforms
 
 
 def LoadImage(file, device):
     img = cv2.imread(file, 0)
     img = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
-    # img = np.floor(img / 255)
-    img = img / 255
-
-    img = torch.from_numpy(img)
+   
+    trans = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+    img = trans(img).float()
     img = img.view(1, 1, 28, 28)
-    img = img.float()
+    print(img)
     return img
 
 
@@ -33,7 +33,6 @@ def PlotPrediction(img, pred):
     axs[1].bar(pos, frequencies, width, color='r')
     fig.tight_layout()
     plt.show()
-    input()
     plt.close('all')
 
 
@@ -49,8 +48,10 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model.pt"))
     model.eval()
 
+    # img = LoadImage(
+    #     DATA_PATH + "sample_nums/num_7.png", device)
     img = LoadImage(
-        DATA_PATH + "sample_nums/num_8.png", device)
+        DATA_PATH + "mnist_sample/6.png", device)
     img = img.to(device)
 
     pred = model(img)
