@@ -5,7 +5,6 @@ import cv2
 from torch.autograd import Variable
 
 
-
 def LoadImage(file, device):
     img = cv2.imread(file, 0)
     img = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
@@ -16,6 +15,27 @@ def LoadImage(file, device):
     img = img.view(1, 1, 28, 28)
     img = img.float()
     return img
+
+
+def PlotPrediction(img, pred):
+    fig, axs = plt.subplots(1, 2)
+
+    alphab = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+    frequencies = pred.flatten().cpu().detach().numpy()
+
+    pos = np.arange(len(alphab))
+    width = 1.0     # gives histogram aspect to the bar diagram
+
+    axs[0].imshow(img.cpu().view(28, 28))
+    # axs[1] = plt.axes()
+    axs[1].set_xticks(pos )
+    axs[1].set_xticklabels(alphab)
+    axs[1].bar(pos, frequencies, width, color='r')
+    fig.tight_layout()
+    plt.show()
+    input()
+    plt.close('all')
+
 
 
 if __name__ == "__main__":
@@ -30,12 +50,13 @@ if __name__ == "__main__":
     model.eval()
 
     img = LoadImage(
-        DATA_PATH + "sample_nums/num_9.png", device)
+        DATA_PATH + "sample_nums/num_8.png", device)
     img = img.to(device)
 
-    print(img.shape)
     pred = model(img)
-    indx = torch.argmax(pred.data, dim=1)
-    plt.imshow(img.cpu().view(28, 28))
-    print("Prediction: ", indx.item(), "",  pred)
-    plt.show()
+    indx = torch.argmax(pred.data, dim=1)  
+
+    print(indx, pred)
+
+    # print(classes)
+    PlotPrediction(img, pred)

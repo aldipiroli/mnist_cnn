@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 import torchvision.datasets
 import numpy as np
 import matplotlib.pyplot as plt
+import torch.nn.functional as F
 
 
 
@@ -13,26 +14,27 @@ import matplotlib.pyplot as plt
 class ConvNet(nn.Module):
     def __init__(self):
         super(ConvNet, self).__init__()
-        self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2))
-        self.layer2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2))
-        self.drop_out = nn.Dropout()
-        self.fc1 = nn.Linear(7 * 7 * 64, 1000)
-        self.fc2 = nn.Linear(1000, 10)
+        self.conv1 = nn.Conv2d(1, 32, 3, 1)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1)
+        self.dropout1 = nn.Dropout(0.25)
+        self.dropout2 = nn.Dropout(0.5)
+        self.fc1 = nn.Linear(9216, 128)
+        self.fc2 = nn.Linear(128, 10)
 
     def forward(self, x):
-        out = self.layer1(x)
-        out = self.layer2(out)
-        out = out.reshape(out.size(0), -1)
-        out = self.drop_out(out)
-        out = self.fc1(out)
-        out = self.fc2(out)
-        return out
+        x = self.conv1(x)
+        x = F.relu(x)
+        x = self.conv2(x)
+        x = F.relu(x)
+        x = F.max_pool2d(x, 2)
+        x = self.dropout1(x)
+        x = torch.flatten(x, 1)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.dropout2(x)
+        x = self.fc2(x)
+        output = F.log_softmax(x, dim=1)
+        return output
 
 
 def load_data(DATA_PATH, batch_size):
@@ -64,7 +66,8 @@ def train_model(model, train_loader, device):
             images, labels = images.to(device), labels.to(device)
             # Run the forward pass
             outputs = model(images)
-            loss = criterion(outputs, labels)
+            loss = F.nll_loss(outputs, labels)
+
             loss_list.append(loss.item())
 
             # Backprop and perform Adam optimisation
@@ -92,7 +95,9 @@ def test_model(model, test_loader, device, MODEL_STORE_PATH):
         total = 0
         for images, labels in test_loader:
             images, labels = images.to(device), labels.to(device)
+
             outputs = model(images)
+
             _, predicted = torch.max(outputs.data, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -101,7 +106,7 @@ def test_model(model, test_loader, device, MODEL_STORE_PATH):
             (correct / total) * 100))
 
     # Save the model and plot
-    # torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model.pt')
+    torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model.pt')
 
 def print_loss(loss_list):
     plt.plot(np.arange(len(loss_list)), loss_list)
@@ -114,8 +119,8 @@ if __name__ == "__main__":
         "cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     # Hyperparameters
-    num_epochs = 6
-    batch_size = 100
+    num_epochs = 5
+    batch_size = 64
     learning_rate = 0.001
 
     DATA_PATH = '/home/aldi/workspace/projects/mnist_cnn/src/data/'
@@ -126,16 +131,20 @@ if __name__ == "__main__":
     model = ConvNet().to(device)
 
     # Loss and optimizer
-    criterion = nn.CrossEntropyLoss()
+    # criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 
     loss_list = train_model(model, train_loader, device)
 
 
-    model = ConvNet().to(device)
-    model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model.pt"))
+    # Load Model:
+    # model = ConvNet().to(device)
+    # model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model.pt"))
+
+
+    # Evaluate Model:
     model.eval()
     test_model(model, test_loader, device, MODEL_STORE_PATH)
 
-    # print_loss(loss_list)
+    print_loss(loss_list)
