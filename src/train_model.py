@@ -102,13 +102,13 @@ def test_model(model, test_loader, device):
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
 
-            print(predicted)
-            plt.imshow(images.cpu().view(28,28))
-            plt.show()
-            print(images.cpu().view(28,28))
-            cv2.imwrite(str(labels.flatten())+".png", images.cpu().view(28,28).numpy()) 
-            input()
-            plt.close('all')
+            # print(predicted)
+            # plt.imshow(images.cpu().view(28,28))
+            # plt.show()
+            # print(images.cpu().view(28,28))
+            # cv2.imwrite(str(labels.flatten())+".png", images.cpu().view(28,28).numpy()) 
+            # input()
+            # plt.close('all')
 
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
@@ -164,4 +164,4 @@ if __name__ == "__main__":
     # save_model(model, MODEL_STORE_PATH)
 
 
-    print_loss(loss_list)
+    # print_loss(loss_list)

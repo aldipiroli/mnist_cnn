@@ -48,10 +48,10 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model.pt"))
     model.eval()
 
-    # img = LoadImage(
-    #     DATA_PATH + "sample_nums/num_7.png", device)
     img = LoadImage(
-        DATA_PATH + "mnist_sample/6.png", device)
+        DATA_PATH + "sample_nums/num_2.png", device)
+    # img = LoadImage(
+    #     DATA_PATH + "mnist_sample/6.png", device)
     img = img.to(device)
 
     pred = model(img)
