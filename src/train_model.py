@@ -53,7 +53,7 @@ def load_data(DATA_PATH, batch_size):
     train_loader = DataLoader(dataset=train_dataset,
                               batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(dataset=test_dataset,
-                             batch_size=batch_size, shuffle=True)
+                             batch_size=batch_size, shuffle=False)
     
     return train_loader, test_loader
 
@@ -102,13 +102,14 @@ def test_model(model, test_loader, device):
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
 
-            # print(predicted)
+            print(predicted, outputs)
             # plt.imshow(images.cpu().view(28,28))
-            # plt.show()
+            plt.show()
+            print(images.cpu().shape)
             # print(images.cpu().view(28,28))
-            # cv2.imwrite(str(labels.flatten())+".png", images.cpu().view(28,28).numpy()) 
-            # input()
-            # plt.close('all')
+            cv2.imwrite(str(labels.flatten())+".png", images.cpu().view(28,28).numpy()) 
+            input()
+            plt.close('all')
 
             total += labels.size(0)
             correct += (predicted == labels).sum().item()

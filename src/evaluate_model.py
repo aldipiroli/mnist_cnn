@@ -7,13 +7,12 @@ import torchvision.transforms as transforms
 
 
 def LoadImage(file, device):
-    img = cv2.imread(file, 0)
-    img = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
-   
+    img = cv2.imread(file, cv2.IMREAD_GRAYSCALE)
+    # img = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
     trans = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
-    img = trans(img).float()
+    img = trans(img)
     img = img.view(1, 1, 28, 28)
-    print(img)
+    # print(img)
     return img
 
 
@@ -36,6 +35,19 @@ def PlotPrediction(img, pred):
     plt.close('all')
 
 
+def load_dataset(DATA_PATH, batch_size):
+    trans = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+
+    # MNIST dataset
+    test_dataset = torchvision.datasets.MNIST(
+        root=DATA_PATH, train=False, transform=trans)
+
+    # Data loader
+    test_loader = DataLoader(dataset=test_dataset,
+                             batch_size=batch_size, shuffle=False)
+    
+    return test_loader
 
 if __name__ == "__main__":
     DATA_PATH = '/home/aldi/workspace/projects/mnist_cnn/src/data/'
@@ -48,16 +60,23 @@ if __name__ == "__main__":
     model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model.pt"))
     model.eval()
 
-    img = LoadImage(
-        DATA_PATH + "sample_nums/num_2.png", device)
+
+    # test_loader = load_dataset(DATA_PATH, batch_size=1)
+
+    
+    img = LoadImage("/home/aldi/workspace/projects/mnist_cnn/src/data/mnist_sample/test7.png", device)
+
+    print(img.shape)
     # img = LoadImage(
     #     DATA_PATH + "mnist_sample/6.png", device)
     img = img.to(device)
 
     pred = model(img)
     indx = torch.argmax(pred.data, dim=1)  
+    
 
     print(indx, pred)
+    cv2.imwrite("test7.png", img.cpu().view(28,28).numpy()) 
 
     # print(classes)
-    PlotPrediction(img, pred)
+    # PlotPrediction(img, pred)
