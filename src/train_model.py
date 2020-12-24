@@ -103,7 +103,7 @@ def test_model(model, test_loader, device):
             _, predicted = torch.max(outputs.data, 1)
 
             print(predicted, outputs)
-            # plt.imshow(images.cpu().view(28,28))
+            plt.imshow(images.cpu().view(28,28))
             plt.show()
             print(images.cpu().shape)
             # print(images.cpu().view(28,28))

@@ -34,10 +34,10 @@ cv2.destroyAllWindows()
 
 print("End of life")
 
-kernel = np.ones((2,2),np.float32)/4
+kernel = np.ones((2, 2),np.float32)/4
 img = cv2.filter2D(img,-1,kernel)
 
-cv2.imwrite("test7.png", img) 
+cv2.imwrite("test71.png", img) 
 
 plt.imshow(img)
 plt.show()

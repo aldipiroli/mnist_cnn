@@ -8,11 +8,18 @@ import torchvision.transforms as transforms
 
 def LoadImage(file, device):
     img = cv2.imread(file, cv2.IMREAD_GRAYSCALE)
-    # img = cv2.resize(img, (28, 28), interpolation=cv2.INTER_AREA)
-    trans = transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
-    img = trans(img)
+    # print("The max is: ", max_val)
+    trans = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+    img = trans(img).float()
     img = img.view(1, 1, 28, 28)
-    # print(img)
+    return img
+
+def pre_process_image(img, device):
+    trans = transforms.Compose(
+        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+    img = trans(img).float()
+    img = img.view(1, 1, 28, 28)
     return img
 
 
@@ -27,7 +34,7 @@ def PlotPrediction(img, pred):
 
     axs[0].imshow(img.cpu().view(28, 28))
     # axs[1] = plt.axes()
-    axs[1].set_xticks(pos )
+    axs[1].set_xticks(pos)
     axs[1].set_xticklabels(alphab)
     axs[1].bar(pos, frequencies, width, color='r')
     fig.tight_layout()
@@ -35,19 +42,49 @@ def PlotPrediction(img, pred):
     plt.close('all')
 
 
-def load_dataset(DATA_PATH, batch_size):
-    trans = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+class ImageCapture:
+    def __init__(self):
+        self.drawing = False
+        self.pt1_x = None
+        self.pt1_y = None
 
-    # MNIST dataset
-    test_dataset = torchvision.datasets.MNIST(
-        root=DATA_PATH, train=False, transform=trans)
 
-    # Data loader
-    test_loader = DataLoader(dataset=test_dataset,
-                             batch_size=batch_size, shuffle=False)
-    
-    return test_loader
+        self.img = np.zeros((28,28,1), np.float)
+        cv2.namedWindow('test draw', cv2.WINDOW_NORMAL)
+        cv2.setMouseCallback('test draw',self.line_drawing)
+
+        while(1):
+            cv2.imshow('test draw', self.img)
+            if cv2.waitKey(1) & 0xFF == 27:
+                break
+        cv2.destroyAllWindows()
+
+        kernel = np.ones((2, 2),np.float32)/4
+        self.img = cv2.filter2D(self.img,-1,kernel)
+        
+
+    def line_drawing(self, event, x, y, flags, param):
+
+        if event == cv2.EVENT_LBUTTONDOWN:
+            self.drawing = True
+            self.pt1_x, self.pt1_y = x, y
+
+        elif event == cv2.EVENT_MOUSEMOVE:
+            if self.drawing == True:
+                cv2.line(self.img, (self.pt1_x, self.pt1_y),
+                         (x, y), color=(255, 255, 255), thickness=2)
+                self.pt1_x, self.pt1_y = x, y
+
+        elif event == cv2.EVENT_LBUTTONUP:
+            self.drawing = False
+            cv2.line(self.img, (self.pt1_x, self.pt1_y),
+                     (x, y), color=(255, 255, 255), thickness=2)
+
+        return self.img
+
+    def get_image(self):
+        return self.img
+
 
 if __name__ == "__main__":
     DATA_PATH = '/home/aldi/workspace/projects/mnist_cnn/src/data/'
@@ -61,22 +98,29 @@ if __name__ == "__main__":
     model.eval()
 
 
-    # test_loader = load_dataset(DATA_PATH, batch_size=1)
 
-    
-    img = LoadImage("/home/aldi/workspace/projects/mnist_cnn/src/data/mnist_sample/test7.png", device)
 
-    print(img.shape)
+    ### LOAD IMAGE FROM FILE:
     # img = LoadImage(
-    #     DATA_PATH + "mnist_sample/6.png", device)
+    #     "/home/aldi/workspace/projects/mnist_cnn/src/data/sample_nums/num_0.png", device)
+
+
+    ### GET IMAGE FROM MAUSE:
+    capture = ImageCapture()
+    img = capture.get_image()
+    img = pre_process_image(img, device)
+
+
+    # View Image:
+    plt.imshow(img.cpu().view(28, 28))
+    plt.show()
+    print(img)
+
+
+    # Evaluate the image:
     img = img.to(device)
-
     pred = model(img)
-    indx = torch.argmax(pred.data, dim=1)  
-    
-
+    indx = torch.argmax(pred.data, dim=1)
     print(indx, pred)
-    cv2.imwrite("test7.png", img.cpu().view(28,28).numpy()) 
 
-    # print(classes)
-    # PlotPrediction(img, pred)
+    PlotPrediction(img, pred)
