@@ -94,7 +94,7 @@ if __name__ == "__main__":
         "cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     model = ConvNet().to(device)
-    model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model.pt"))
+    model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model_2conv_25.pt"))
     model.eval()
 
 

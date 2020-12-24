@@ -10,8 +10,6 @@ import torch.nn.functional as F
 import cv2
 
 
-
-
 # Convolutional neural network (two convolutional layers)
 class ConvNet(nn.Module):
     def __init__(self):
@@ -24,6 +22,7 @@ class ConvNet(nn.Module):
             nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2))
+
         self.drop_out = nn.Dropout()
         self.fc1 = nn.Linear(7 * 7 * 64, 1000)
         self.fc2 = nn.Linear(1000, 10)
@@ -31,6 +30,38 @@ class ConvNet(nn.Module):
     def forward(self, x):
         out = self.layer1(x)
         out = self.layer2(out)
+        out = out.reshape(out.size(0), -1)
+        out = self.drop_out(out)
+        out = self.fc1(out)
+        out = self.fc2(out)
+        out = F.softmax(out, dim=1)
+        return out
+
+class ConvNet3Conv(nn.Module):
+    def __init__(self):
+        super(ConvNet, self).__init__()
+        self.layer1 = nn.Sequential(
+            nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+        self.layer2 = nn.Sequential(
+            nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+            
+        self.layer3 = nn.Sequential(
+            nn.Conv2d(64, 128, kernel_size=5, stride=1, padding=2),
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2))
+
+        self.drop_out = nn.Dropout()
+        self.fc1 = nn.Linear(3 * 3 * 128, 1000)
+        self.fc2 = nn.Linear(1000, 10)
+
+    def forward(self, x):
+        out = self.layer1(x)
+        out = self.layer2(out)
+        out = self.layer3(out)
         out = out.reshape(out.size(0), -1)
         out = self.drop_out(out)
         out = self.fc1(out)
@@ -102,13 +133,13 @@ def test_model(model, test_loader, device):
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
 
-            print(predicted, outputs)
-            plt.imshow(images.cpu().view(28,28))
-            plt.show()
-            print(images.cpu().shape)
-            # print(images.cpu().view(28,28))
-            cv2.imwrite(str(labels.flatten())+".png", images.cpu().view(28,28).numpy()) 
-            input()
+            # print(predicted, outputs)
+            # plt.imshow(images.cpu().view(28,28))
+            # plt.show()
+            # print(images.cpu().shape)
+            # # print(images.cpu().view(28,28))
+            # cv2.imwrite(str(labels.flatten())+".png", images.cpu().view(28,28).numpy()) 
+            # input()
             plt.close('all')
 
             total += labels.size(0)
@@ -121,11 +152,10 @@ def test_model(model, test_loader, device):
 
 
 def save_model(model, MODEL_STORE_PATH):
-    # Save the model and plot
-    torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model.pt')
+    torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model_2conv_25.pt')
 
 def print_loss(loss_list):
-    plt.plot(np.arange(len(loss_list)), loss_list)
+    plt.plot(np.arange(len(loss_list)), loss_list, 'b')
     plt.grid()
     plt.show()
 
@@ -135,8 +165,8 @@ if __name__ == "__main__":
         "cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     # Hyperparameters
-    num_epochs = 5
-    batch_size = 1
+    num_epochs = 25
+    batch_size = 100
     learning_rate = 0.00001
 
     DATA_PATH = '/home/aldi/workspace/projects/mnist_cnn/src/data/'
@@ -149,20 +179,21 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # Train Model:
-    # loss_list = train_model(model, train_loader, device)
+    loss_list = train_model(model, train_loader, device)
 
+    # Save Model:
+    save_model(model, MODEL_STORE_PATH)
 
     # Load Model:
-    model = ConvNet().to(device)
-    model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model.pt"))
+    # model = ConvNet().to(device)
+    # model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model.pt"))
 
 
     # Evaluate Model:
     model.eval()
     test_model(model, test_loader, device)
 
-    # Save Model:
-    # save_model(model, MODEL_STORE_PATH)
 
 
-    # print_loss(loss_list)
+
+    print_loss(loss_list)
