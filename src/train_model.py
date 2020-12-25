@@ -74,13 +74,14 @@ def test_model(model, test_loader, device):
             outputs = model(images)
             _, predicted = torch.max(outputs.data, 1)
 
-            # print(predicted, outputs)
-            # plt.imshow(images.cpu().view(28,28))
-            # plt.show()
-            # print(images.cpu().shape)
-            # # print(images.cpu().view(28,28))
+
+            print(images.cpu().shape)
+            print(predicted, outputs)
+            plt.imshow(images.cpu().view(28,28))
+            plt.show()
+            # print(images.cpu().view(28,28))
             # cv2.imwrite(str(labels.flatten())+".png", images.cpu().view(28,28).numpy()) 
-            # input()
+            input()
             plt.close('all')
 
             total += labels.size(0)
@@ -107,7 +108,7 @@ if __name__ == "__main__":
 
     # Hyperparameters
     num_epochs = 15
-    batch_size = 100
+    batch_size = 1
     learning_rate = 0.00001
 
     DATA_PATH = '/home/aldi/workspace/projects/mnist_cnn/src/data/'
@@ -120,14 +121,14 @@ if __name__ == "__main__":
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # Train Model:
-    loss_list = train_model(model, train_loader, device)
+    # loss_list = train_model(model, train_loader, device)
 
     # Save Model:
-    save_model(model, MODEL_STORE_PATH)
+    # save_model(model, MODEL_STORE_PATH)
 
     # Load Model:
-    # model = ConvNet().to(device)
-    # model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model.pt"))
+    model = ConvNet2L().to(device)
+    model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model_2conv_15.pt"))
 
 
     # Evaluate Model:

@@ -58,6 +58,7 @@ class ImageCapture:
 
         # self.img = np.zeros((28,28,1), np.float)
         self.img = np.zeros((500,500,1), np.float)
+        # self.img = cv2.rectangle(self.img, (50, 50), (250, 250), 50, (255, 255, 255), 5)
         cv2.namedWindow('test draw', cv2.WINDOW_NORMAL)
         cv2.setMouseCallback('test draw',self.line_drawing)
 
@@ -67,10 +68,8 @@ class ImageCapture:
                 break
         cv2.destroyAllWindows()
 
-        # kernel = np.ones((2, 2),np.float32)/4
-        # self.img = cv2.filter2D(self.img,-1,kernel)
         self.CenterImage()
-        self.img = cv2.resize(self.img, (28, 28), interpolation=cv2.INTER_AREA)
+        self.Normalize()
 
         
 
@@ -83,13 +82,13 @@ class ImageCapture:
         elif event == cv2.EVENT_MOUSEMOVE:
             if self.drawing == True:
                 cv2.line(self.img, (self.pt1_x, self.pt1_y),
-                         (x, y), color=(255, 255, 255), thickness=35)
+                         (x, y), color=(255, 255, 255), thickness=20)
                 self.pt1_x, self.pt1_y = x, y
 
         elif event == cv2.EVENT_LBUTTONUP:
             self.drawing = False
             cv2.line(self.img, (self.pt1_x, self.pt1_y),
-                     (x, y), color=(255, 255, 255), thickness=35)
+                     (x, y), color=(255, 255, 255), thickness=20)
 
         return self.img
 
@@ -105,9 +104,19 @@ class ImageCapture:
 
         x, y, w, h = cv2.boundingRect(img_cp)
 
-        buff = 10
+        buff = 50
         self.img = img_cp[y-buff:y+h+buff, x-buff:x+w+buff]
 
+    def Normalize(self):
+        self.img = cv2.resize(self.img, (28, 28), interpolation=cv2.INTER_AREA)
+        # kernel = np.ones((2, 2),np.float32)/4
+        # self.img = cv2.filter2D(self.img,-1,kernel)
+        max_val = np.amax(self.img)  
+        self.img = self.img / max_val
+        # self.img[self.img > 0.6] = 1
+
+        # self.img = 1 - self.img
+        return self.img
 
 
 if __name__ == "__main__":
@@ -140,7 +149,7 @@ if __name__ == "__main__":
     # View Image:
     plt.imshow(img.cpu().view(28, 28))
     plt.show()
-    print(img)
+    # print(img)
 
 
     # Evaluate the image:
