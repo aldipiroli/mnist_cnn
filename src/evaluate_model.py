@@ -1,22 +1,16 @@
-from train_model import *
+# from train_.model import *
 import torch
 from torch import nn
 import cv2
 from torch.autograd import Variable
 import torchvision.transforms as transforms
 from models import *
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 def LoadImage(file, device):
     img = cv2.imread(file, cv2.IMREAD_GRAYSCALE)
-    # print("The max is: ", max_val)
-    trans = transforms.Compose(
-        [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
-    img = trans(img).float()
-    img = img.view(1, 1, 28, 28)
-    return img
-
-def pre_process_image(img, device):
     trans = transforms.Compose(
         [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
     img = trans(img).float()
@@ -24,43 +18,27 @@ def pre_process_image(img, device):
     return img
 
 
-def PlotPrediction(img, pred3L, pred2L):
-    fig, axs = plt.subplots(1, 3)
+class RecognizeNumber:
+    def __init__(self, model_ID_):
+        self.DATA_PATH = '/home/aldi/workspace/projects/mnist_cnn/src/data/'
+        self.model_STORE_PATH = '/home/aldi/workspace/projects/mnist_cnn/src/self.model/'
 
-    alphab = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
-    frequencies3L = pred3L.flatten().cpu().detach().numpy()
-    frequencies2L = pred2L.flatten().cpu().detach().numpy()
+        self.device = torch.device(
+            "cuda") if torch.cuda.is_available() else torch.device("cpu")
 
+        self.model_ID = model_ID_
+        self.model = None
 
-    pos = np.arange(len(alphab))
-    width = 1.0     # gives histogram aspect to the bar diagram
+        ### Load the model:
+        self.LoadModel()
 
-    axs[0].imshow(img.cpu().view(28, 28))
-    # axs[1] = plt.axes()
-    axs[1].set_xticks(pos)
-    axs[1].set_xticklabels(alphab)
-    axs[1].bar(pos, frequencies3L, width, color='r')
-
-    axs[2].set_xticks(pos)
-    axs[2].set_xticklabels(alphab)
-    axs[2].bar(pos, frequencies2L, width, color='r')
-    fig.tight_layout()
-    plt.show()
-    plt.close('all')
-
-
-class ImageCapture:
-    def __init__(self):
         self.drawing = False
         self.pt1_x = None
         self.pt1_y = None
 
-
-        # self.img = np.zeros((28,28,1), np.float)
-        self.img = np.zeros((500,500,1), np.float)
-        # self.img = cv2.rectangle(self.img, (50, 50), (250, 250), 50, (255, 255, 255), 5)
+        self.img = np.zeros((500, 500, 1), np.float)
         cv2.namedWindow('test draw', cv2.WINDOW_NORMAL)
-        cv2.setMouseCallback('test draw',self.line_drawing)
+        cv2.setMouseCallback('test draw', self.LideDrawing)
 
         while(1):
             cv2.imshow('test draw', self.img)
@@ -68,13 +46,12 @@ class ImageCapture:
                 break
         cv2.destroyAllWindows()
 
-        self.CenterImage()
-        self.Normalize()
+        self.RecognizeImage()
 
-        
+        # self.PlotPrediction()
 
-    def line_drawing(self, event, x, y, flags, param):
 
+    def LideDrawing(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
             self.drawing = True
             self.pt1_x, self.pt1_y = x, y
@@ -92,11 +69,23 @@ class ImageCapture:
 
         return self.img
 
-    def get_image(self):
-        return self.img
+    def RecognizeImage(self):
+        self.CenterImage()
+        print("CenterImage")
+
+        self.Normalize()
+        print("Normalize")
+
+        img = self.ProcessImage()
+        print("ProcessImage")
+
+        self.MakePrediction(img)
+        print("MakePrediction")
+
+
 
     def CenterImage(self):
-        self.img = self.img[:,:,0]
+        self.img = self.img[:, :, 0]
         img_cp = np.uint8(self.img)
 
         height = img_cp.shape[0]
@@ -109,58 +98,67 @@ class ImageCapture:
 
     def Normalize(self):
         self.img = cv2.resize(self.img, (28, 28), interpolation=cv2.INTER_AREA)
-        # kernel = np.ones((2, 2),np.float32)/4
-        # self.img = cv2.filter2D(self.img,-1,kernel)
-        max_val = np.amax(self.img)  
-        self.img = self.img / max_val
-        # self.img[self.img > 0.6] = 1
+        self.img = self.img / np.amax(self.img)
+        return self.img
 
-        # self.img = 1 - self.img
+    def ProcessImage(self, img, device):
+        trans = transforms.Compose(
+            [transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+        img = trans(img).float()
+        img = img.view(1, 1, 28, 28)
+        return img
+
+    def PlotPrediction(self):
+        fig, axs = plt.subplots(1, 2)
+
+        alphab = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9']
+        frequencies = self.pred.flatten().cpu().detach().numpy()
+
+        pos = np.arange(len(alphab))
+
+        axs[0].imshow(self.img.cpu().view(28, 28))
+
+        axs[1].set_xticks(pos)
+        axs[1].set_xticklabels(alphab)
+        axs[1].bar(pos, frequencies, 2, color='r')
+
+        # axs[2].set_xticks(pos)
+        # axs[2].set_xticklabels(alphab)
+        # axs[2].bar(pos, frequencies2L, 2, color='r')
+
+        # fig.suptitle('test title', fontsize=12)
+
+        fig.tight_layout()
+        plt.show()
+        plt.close('all')
+
+    def LoadModel(self):
+        if(self.model_ID != 2 or self.model_ID != 3):
+            print("ERROR in the self.model Choiche!")
+            return
+
+        if(self.model_ID == 2):
+            self.model = ConvNet2L().to(device)
+            self.model.load_state_dict(torch.load(
+                self.model_STORE_PATH+"conv_net_self.model_2conv_15.pt"))
+
+        if(self.model_ID == 3):
+            self.model = ConvNet3L().to(device)
+            self.model.load_state_dict(torch.load(self.model_STORE_PATH+"conv_net_self.model_3conv_15.pt"))
+        
+        
+        self.model.eval()
+
+    def MakePrediction(self, img_):
+        img = img_.to(device)
+        self.pred = self.model(img)
+        self.indx = torch.argmax(self.pred.data, dim=1)
+        print("Prediction", self.indx)
+
+    def GetImage(self):
         return self.img
 
 
 if __name__ == "__main__":
-    DATA_PATH = '/home/aldi/workspace/projects/mnist_cnn/src/data/'
-    MODEL_STORE_PATH = '/home/aldi/workspace/projects/mnist_cnn/src/model/'
 
-    device = torch.device(
-        "cuda") if torch.cuda.is_available() else torch.device("cpu")
-
-    model2L = ConvNet2L().to(device)
-    model2L.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model_2conv_15.pt"))
-    model2L.eval()
-
-    model3L = ConvNet3L().to(device)
-    model3L.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model_3conv_15.pt"))
-    model3L.eval()
-
-
-    ### LOAD IMAGE FROM FILE:
-    # img = LoadImage(
-    #     "/home/aldi/workspace/projects/mnist_cnn/src/data/sample_nums/num_0.png", device)
-
-
-    ### GET IMAGE FROM MAUSE:
-    capture = ImageCapture()
-    img = capture.get_image()
-    img = pre_process_image(img, device)
-
-
-    # View Image:
-    plt.imshow(img.cpu().view(28, 28))
-    plt.show()
-    # print(img)
-
-
-    # Evaluate the image:
-    img = img.to(device)
-    pred3L = model3L(img)
-    indx3L = torch.argmax(pred3L.data, dim=1)
-
-    img = img.to(device)
-    pred2L = model2L(img)
-    indx2L = torch.argmax(pred2L.data, dim=1)
-
-    print("Model 3L", indx3L, "Model 2L", indx2L)
-
-    PlotPrediction(img, pred3L, pred3L)
+    r = RecognizeNumber(2)
