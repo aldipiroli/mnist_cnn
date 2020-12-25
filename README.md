@@ -1,7 +1,7 @@
-## MNIST Dataset with Convolutional Neural Networks
+# MNIST Dataset with Convolutional Neural Networks
 
 ![Alt Text](./media/thumbnail_video.gif)
-
+## Install
 ### Dependencies 
 * torch
 * cv2 
@@ -20,7 +20,8 @@ Evaluate the model with mouse input:
 $ python3 src/evaluate_model.py
 ```
 
-### Info
+## Description
+### Models
 There are 2 pretrained models saved in /src/models. The first model takes inspiration from this [tutorial](https://adventuresinmachinelearning.com/convolutional-neural-networks-tutorial-in-pytorch/), here is the model:
 
 
@@ -29,3 +30,8 @@ There are 2 pretrained models saved in /src/models. The first model takes inspir
 
 The second model adds a new convolutional layer. 
 
+### Image Processing
+When evaluation the model input mouse data, the image is take using opencv using a 500x500 canvas. Then the image is centered and finally is reduced to a 28x28 image (MNIST origianl image format). 
+
+
+Performances seem to be better when the input images is pretty well centered. 
