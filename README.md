@@ -28,7 +28,7 @@ There are 2 pretrained models saved in /src/models. The first model takes inspir
 ![alt text](./media/model_diagram.jpeg)
 
 
-The second model adds a new convolutional layer with 128 filters. relu activation and a max pooling at the end of it. 
+The second model adds a new convolutional layer with 128 filters, a relu activation and a max pooling at the end of it. 
 
 ### Image Processing
 When evaluation the model input mouse data, the image is take using opencv using a 500x500 canvas. Then the image is centered and finally is reduced to a 28x28 image (MNIST origianl image format). 
