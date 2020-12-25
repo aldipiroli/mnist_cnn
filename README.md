@@ -40,5 +40,5 @@ Performances seem to be better when the input images are well centered.
 Here is a link to the live process recorded on YouTube: 
 
 
-[![IMAGE ALT TEXT HERE](http://img.youtube.com/vi/GSZr759Y2hg/0.jpg)](http://www.youtube.com/watch?v=GSZr759Y2hg)
+[![IMAGE ALT TEXT HERE](./media/recap2.png)](http://www.youtube.com/watch?v=GSZr759Y2hg)
 
