@@ -7,34 +7,8 @@ import torchvision.datasets
 import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
-
-
-
-# Convolutional neural network (two convolutional layers)
-class ConvNet(nn.Module):
-    def __init__(self):
-        super(ConvNet, self).__init__()
-        self.conv1 = nn.Conv2d(1, 32, 3, 1)
-        self.conv2 = nn.Conv2d(32, 64, 3, 1)
-        self.dropout1 = nn.Dropout(0.25)
-        self.dropout2 = nn.Dropout(0.5)
-        self.fc1 = nn.Linear(9216, 128)
-        self.fc2 = nn.Linear(128, 10)
-
-    def forward(self, x):
-        x = self.conv1(x)
-        x = F.relu(x)
-        x = self.conv2(x)
-        x = F.relu(x)
-        x = F.max_pool2d(x, 2)
-        x = self.dropout1(x)
-        x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = F.relu(x)
-        x = self.dropout2(x)
-        x = self.fc2(x)
-        output = F.log_softmax(x, dim=1)
-        return output
+import cv2
+from models import *
 
 
 def load_data(DATA_PATH, batch_size):
@@ -60,13 +34,15 @@ def train_model(model, train_loader, device):
     total_step = len(train_loader)
     loss_list = []
     acc_list = []
+    criterion = nn.CrossEntropyLoss()
+
     model.train()
     for epoch in range(num_epochs):
         for i, (images, labels) in enumerate(train_loader):
             images, labels = images.to(device), labels.to(device)
             # Run the forward pass
             outputs = model(images)
-            loss = F.nll_loss(outputs, labels)
+            loss = criterion(outputs, labels)
 
             loss_list.append(loss.item())
 
@@ -88,28 +64,40 @@ def train_model(model, train_loader, device):
     return loss_list
 
 
-def test_model(model, test_loader, device, MODEL_STORE_PATH):
+def test_model(model, test_loader, device):
     model.eval()
     with torch.no_grad():
         correct = 0
         total = 0
         for images, labels in test_loader:
             images, labels = images.to(device), labels.to(device)
-
             outputs = model(images)
-
             _, predicted = torch.max(outputs.data, 1)
+
+
+            print(images.cpu().shape)
+            print(predicted, outputs)
+            plt.imshow(images.cpu().view(28,28))
+            plt.show()
+            # print(images.cpu().view(28,28))
+            # cv2.imwrite(str(labels.flatten())+".png", images.cpu().view(28,28).numpy()) 
+            input()
+            plt.close('all')
+
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
         print('Test Accuracy of the model on the 10000 test images: {} %'.format(
             (correct / total) * 100))
 
-    # Save the model and plot
-    torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model.pt')
+
+
+
+def save_model(model, MODEL_STORE_PATH):
+    torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model_3conv_15.pt')
 
 def print_loss(loss_list):
-    plt.plot(np.arange(len(loss_list)), loss_list)
+    plt.plot(np.arange(len(loss_list)), loss_list, 'b')
     plt.grid()
     plt.show()
 
@@ -119,32 +107,35 @@ if __name__ == "__main__":
         "cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     # Hyperparameters
-    num_epochs = 5
-    batch_size = 64
-    learning_rate = 0.001
+    num_epochs = 15
+    batch_size = 1
+    learning_rate = 0.00001
 
     DATA_PATH = '/home/aldi/workspace/projects/mnist_cnn/src/data/'
     MODEL_STORE_PATH = '/home/aldi/workspace/projects/mnist_cnn/src/model/'
 
 
     train_loader, test_loader = load_data(DATA_PATH, batch_size)
-    model = ConvNet().to(device)
+    model = ConvNet3L().to(device)
 
-    # Loss and optimizer
-    # criterion = nn.CrossEntropyLoss()
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
+    # Train Model:
+    # loss_list = train_model(model, train_loader, device)
 
-    loss_list = train_model(model, train_loader, device)
-
+    # Save Model:
+    # save_model(model, MODEL_STORE_PATH)
 
     # Load Model:
-    # model = ConvNet().to(device)
-    # model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model.pt"))
+    model = ConvNet2L().to(device)
+    model.load_state_dict(torch.load(MODEL_STORE_PATH+"conv_net_model_2conv_15.pt"))
 
 
     # Evaluate Model:
     model.eval()
-    test_model(model, test_loader, device, MODEL_STORE_PATH)
+    test_model(model, test_loader, device)
+
+
+
 
     print_loss(loss_list)

@@ -15,11 +15,11 @@ def line_drawing(event,x,y,flags,param):
 
     elif event==cv2.EVENT_MOUSEMOVE:
         if drawing==True:
-            cv2.line(img,(pt1_x,pt1_y),(x,y),color=(255,255,255),thickness=3)
+            cv2.line(img,(pt1_x,pt1_y),(x,y),color=(255,255,255),thickness=2)
             pt1_x,pt1_y=x,y
     elif event==cv2.EVENT_LBUTTONUP:
         drawing=False
-        cv2.line(img,(pt1_x,pt1_y),(x,y),color=(255,255,255),thickness=3)        
+        cv2.line(img,(pt1_x,pt1_y),(x,y),color=(255,255,255),thickness=2)        
 
 
 img = np.zeros((28,28,1), np.float)
@@ -33,5 +33,11 @@ while(1):
 cv2.destroyAllWindows()
 
 print("End of life")
-# plt.imshow(img)
-# plt.show()
+
+kernel = np.ones((2, 2),np.float32)/4
+img = cv2.filter2D(img,-1,kernel)
+
+cv2.imwrite("test71.png", img) 
+
+plt.imshow(img)
+plt.show()
