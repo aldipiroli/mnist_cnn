@@ -8,66 +8,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torch.nn.functional as F
 import cv2
-
-
-# Convolutional neural network (two convolutional layers)
-class ConvNet(nn.Module):
-    def __init__(self):
-        super(ConvNet, self).__init__()
-        self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2))
-        self.layer2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2))
-
-        self.drop_out = nn.Dropout()
-        self.fc1 = nn.Linear(7 * 7 * 64, 1000)
-        self.fc2 = nn.Linear(1000, 10)
-
-    def forward(self, x):
-        out = self.layer1(x)
-        out = self.layer2(out)
-        out = out.reshape(out.size(0), -1)
-        out = self.drop_out(out)
-        out = self.fc1(out)
-        out = self.fc2(out)
-        out = F.softmax(out, dim=1)
-        return out
-
-class ConvNet3Conv(nn.Module):
-    def __init__(self):
-        super(ConvNet, self).__init__()
-        self.layer1 = nn.Sequential(
-            nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2))
-        self.layer2 = nn.Sequential(
-            nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2))
-            
-        self.layer3 = nn.Sequential(
-            nn.Conv2d(64, 128, kernel_size=5, stride=1, padding=2),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2))
-
-        self.drop_out = nn.Dropout()
-        self.fc1 = nn.Linear(3 * 3 * 128, 1000)
-        self.fc2 = nn.Linear(1000, 10)
-
-    def forward(self, x):
-        out = self.layer1(x)
-        out = self.layer2(out)
-        out = self.layer3(out)
-        out = out.reshape(out.size(0), -1)
-        out = self.drop_out(out)
-        out = self.fc1(out)
-        out = self.fc2(out)
-        out = F.softmax(out, dim=1)
-        return out
+from models import *
 
 
 def load_data(DATA_PATH, batch_size):
@@ -152,7 +93,7 @@ def test_model(model, test_loader, device):
 
 
 def save_model(model, MODEL_STORE_PATH):
-    torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model_2conv_25.pt')
+    torch.save(model.state_dict(), MODEL_STORE_PATH + 'conv_net_model_3conv_15.pt')
 
 def print_loss(loss_list):
     plt.plot(np.arange(len(loss_list)), loss_list, 'b')
@@ -165,7 +106,7 @@ if __name__ == "__main__":
         "cuda") if torch.cuda.is_available() else torch.device("cpu")
 
     # Hyperparameters
-    num_epochs = 25
+    num_epochs = 15
     batch_size = 100
     learning_rate = 0.00001
 
@@ -174,7 +115,7 @@ if __name__ == "__main__":
 
 
     train_loader, test_loader = load_data(DATA_PATH, batch_size)
-    model = ConvNet().to(device)
+    model = ConvNet3L().to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
