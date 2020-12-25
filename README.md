@@ -35,3 +35,10 @@ When evaluation the model input mouse data, the image is take using opencv using
 
 
 Performances seem to be better when the input images are well centered. 
+
+### YouTube Develop Videos
+Here is a link to the live process recorded on YouTube: 
+
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=PL95UxRppPP6DmbtIB8VngOAVZx10RDKfI
+" target="_blank"><img src="http://img.youtube.com/vi/PL95UxRppPP6DmbtIB8VngOAVZx10RDKfI/0.jpg" 
+alt="IMAGE ALT TEXT HERE" width="240" height="180" border="10" /></a>
