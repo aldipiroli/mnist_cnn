@@ -34,4 +34,4 @@ The second model adds a new convolutional layer.
 When evaluation the model input mouse data, the image is take using opencv using a 500x500 canvas. Then the image is centered and finally is reduced to a 28x28 image (MNIST origianl image format). 
 
 
-Performances seem to be better when the input images is pretty well centered. 
+Performances seem to be better when the input images are well centered. 
